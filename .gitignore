@@ -1,0 +1,27 @@
+# phpstorm project files
+.idea
+
+# netbeans project files
+nbproject
+
+# windows thumbnail cache
+Thumbs.db
+
+# Mac DS_Store Files
+.DS_Store
+
+tests/_output/*
+tests/_support/_generated
+
+#vagrant folder
+/.vagrant
+
+node_modules
+screenshot
+logs
+*-debug.log
+*-error.log
+yarn.lock
+
+.env
+runtime
