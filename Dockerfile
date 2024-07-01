@@ -1,65 +1,86 @@
-# FROM node:22.3-slim
-FROM node:20@sha256:cb7cd40ba6483f37f791e1aace576df449fc5f75332c19ff59e2c6064797160e
+FROM ubuntu:20.04
 
+ARG DEBIAN_FRONTEND=noninteractive
+ARG TZ=Asia/Shanghai
+ENV LANG=C.UTF-8
 
-# RUN apt-get update
-# RUN mv /etc/apt/sources.list /etc/apt/sources.list.bak && touch /etc/apt/sources.list
-# RUN cat <<EOL >/etc/apt/sources.list
-# deb http://mirrors.163.com/debian/ buster main non-free contrib
-# deb http://mirrors.163.com/debian/ buster-updates main non-free contrib
-# deb http://mirrors.163.com/debian/ buster-backports main non-free contrib
-# deb http://mirrors.163.com/debian-security/ buster/updates main non-free contrib
-# EOL
+ARG PUPPY_USER_ID=999
+ARG APP_DIR=/usr/src/app
+ARG NODE_VERSION=v20.12.0
 
-# Install latest chrome dev package and fonts to support major charsets (Chinese, Japanese, Arabic, Hebrew, Thai and a few others)
-# Note: this installs the necessary libs to make the bundled version of Chromium that Puppeteer
-RUN apt-get update \
-    && apt-get install -y wget gnupg \
-    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/googlechrome-linux-keyring.gpg \
-    && sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/googlechrome-linux-keyring.gpg] https://dl-ssl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
-    && apt-get update \
-    && apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-freefont-ttf libxss1 dbus dbus-x11 \
-      --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
-
-# If running Docker >= 1.13.0 use docker run's --init arg to reap zombie processes, otherwise
-# uncomment the following lines to have `dumb-init` as PID 1
-# ADD https://github.com/Yelp/dumb-init/releases/download/v1.2.2/dumb-init_1.2.2_x86_64 /usr/local/bin/dumb-init
-# RUN chmod +x /usr/local/bin/dumb-init
-# ENTRYPOINT ["dumb-init", "--"]
-
-# Uncomment to skip the chromium download when installing puppeteer. If you do,
-# you'll need to launch puppeteer with:
-#     browser.launch({executablePath: 'google-chrome-stable'})
-# ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD true
-
-
-
-# Install puppeteer so it's available in the container.
-# Add user so we don't need --no-sandbox.
-# same layer as npm install to keep re-chowned files from using up several hundred MBs more space
-RUN groupadd -r pptruser && useradd -r -g pptruser -G audio,video pptruser \
-    && mkdir -p /home/pptruser/Downloads \
-    && chown -R pptruser:pptruser /home/pptruser
-
-# Set language to UTF8
+ENV NODE_VERSION=$NODE_VERSION
+ENV NVM_DIR /usr/src/.nvm
+ENV NODE_PATH $NVM_DIR/versions/node/$NODE_VERSION/bin
+ENV PATH $NODE_PATH:$PATH
+ENV APP_DIR=$APP_DIR
+ENV TZ=$TZ
+ENV DEBIAN_FRONTEND=$DEBIAN_FRONTEND
+ENV HOST=0.0.0.0
+ENV PORT=3000
 ENV LANG="C.UTF-8"
-ENV TZ="Asia/Shanghai"
+ENV NODE_ENV=production
+ENV DEBUG_COLORS=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+ENV PLAYWRIGHT_BROWSERS_PATH=/usr/local/bin/playwright-browsers
+
+RUN mkdir -p $APP_DIR $NVM_DIR
 
 
-# Run everything after as non-privileged user.
-USER pptruser
-WORKDIR /home/pptruser/app
 
-RUN npm i puppeteer 
-# RUN npm config set sharp_binary_host "https://npmmirror.com/mirrors/sharp" \
-#     && npm config set sharp_libvips_binary_host "https://npmmirror.com/mirrors/sharp-libvips" \
-#     && npm install sharp
+RUN apt-get update && apt-get install -y \
+  ca-certificates \
+  curl \
+  dumb-init \
+  git \
+  gnupg \
+  libu2f-udev \
+  software-properties-common \
+  ssh \
+  wget \
+  xvfb
 
-COPY --chown=pptruser:pptruser . .
+RUN curl -sL https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash &&\
+  . $NVM_DIR/nvm.sh &&\
+  nvm install $NODE_VERSION
+
+RUN add-apt-repository universe && apt-get update && \
+  apt-get install -y python3.10 python3-pip && \
+  update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1 && \
+  update-alternatives --install /usr/bin/python python /usr/bin/python3 1
+
+RUN groupadd -r puppyuser && useradd --uid ${PUPPY_USER_ID} -r -g puppyuser -G audio,video puppyuser && \
+  mkdir -p /home/puppyuser/Downloads && \
+  chown -R puppyuser:puppyuser /home/puppyuser
+
+
+
+RUN echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" | debconf-set-selections && \
+  apt-get -y -qq install software-properties-common &&\
+  apt-add-repository "deb http://archive.canonical.com/ubuntu $(lsb_release -sc) partner" && \
+  apt-get -y -qq --no-install-recommends install \
+    fontconfig \
+    fonts-freefont-ttf \
+    fonts-gfs-neohellenic \
+    fonts-ubuntu \
+    fonts-wqy-zenhei
+
+WORKDIR $APP_DIR
+
+COPY --chown=pptruser:pptruser ./src .
+
+RUN npx --yes playwright install chromium &&\
+  npx --yes playwright install-deps chromium &&\
+  chown -R puppyuser:puppyuser $APP_DIR &&\
+  fc-cache -f -v && \
+  apt-get -qq clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/fonts/truetype/noto
+
+RUN npm config set sharp_binary_host "https://npmmirror.com/mirrors/sharp" \
+    && npm config set sharp_libvips_binary_host "https://npmmirror.com/mirrors/sharp-libvips" \
+    && npm install
+
+USER puppyuser
+
 
 EXPOSE 3000
 
-RUN cd src && yarn
-
-CMD ["node", "src/index.js"]
+CMD ["node", "index.js"]
