@@ -12,7 +12,7 @@ const { createLogger } = require("./utils/logger");
 const logger = createLogger("web");
 const systemLogger = createLogger("system");
 
-const sharp = require('sharp');
+// const sharp = require('sharp');
 const { uploadOss } = require("./utils/upload");
 
 const app = createApp();
@@ -40,31 +40,31 @@ app.all(
 
 
             if (params.height || params.width) {
-                const image = await sharp(result)
-                const metadata = await image.metadata()
+                // const image = await sharp(result)
+                // const metadata = await image.metadata()
 
-                let w = metadata.width, h = metadata.height
-                if (params.height) {
-                    h = parseInt(params.height)
-                }
-                if (params.width) {
-                    w = parseInt(params.width)
-                }
+                // let w = metadata.width, h = metadata.height
+                // if (params.height) {
+                //     h = parseInt(params.height)
+                // }
+                // if (params.width) {
+                //     w = parseInt(params.width)
+                // }
 
-                w = Math.min(w, metadata.width)
-                h = Math.min(h, metadata.height)
+                // w = Math.min(w, metadata.width)
+                // h = Math.min(h, metadata.height)
 
-                if (w == metadata.width && h == metadata.height) {
-                    output = result
-                } else {
-                    const croped = await image.extract({
-                        top: 0,
-                        left: 0,
-                        width: w,
-                        height: h
-                    }).toBuffer()
-                    output = croped
-                }
+                // if (w == metadata.width && h == metadata.height) {
+                //     output = result
+                // } else {
+                //     const croped = await image.extract({
+                //         top: 0,
+                //         left: 0,
+                //         width: w,
+                //         height: h
+                //     }).toBuffer()
+                //     output = croped
+                // }
             }
 
             if (params["upload:type"]) {

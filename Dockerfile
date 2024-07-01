@@ -74,9 +74,7 @@ RUN npx --yes playwright install chromium &&\
   fc-cache -f -v && \
   apt-get -qq clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/fonts/truetype/noto
 
-RUN npm config set sharp_binary_host "https://npmmirror.com/mirrors/sharp" \
-    && npm config set sharp_libvips_binary_host "https://npmmirror.com/mirrors/sharp-libvips" \
-    && npm install
+RUN npm install 
 
 USER puppyuser
 
