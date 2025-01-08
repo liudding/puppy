@@ -3,7 +3,7 @@ const path = require('path');
 module.exports = {
     env: process.env.NODE_ENV || 'production',
 
-    port: Number(process.env.PORT) || 3000,
+    port: Number(process.env.PORT) || 3100,
     debugMode: process.env.DEBUG_MODE === 'true',
 
 

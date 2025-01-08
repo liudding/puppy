@@ -91,14 +91,21 @@ const openChromium = async () => {
 
     try {
         logger.profile("launch chromium");
-        global.browser = await puppeteer.launch({
-            args: chromeConfig.args,
-            defaultViewport: chromeConfig.defaultViewport,
-            headless: "new",
-            timeout: chromeConfig.timeout,
-            userDataDir: chromeConfig.userDataDir,
-            executablePath: chromeConfig.executablePath,
-        });
+        if (chromeConfig.browserWSEndpoint) {
+            global.browser = await puppeteer.connect({
+                browserWSEndpoint: 'ws://localhost:7700',
+            });
+        } else {
+            global.browser = await puppeteer.launch({
+                args: chromeConfig.args,
+                defaultViewport: chromeConfig.defaultViewport,
+                headless: "new",
+                timeout: chromeConfig.timeout,
+                userDataDir: chromeConfig.userDataDir,
+                executablePath: chromeConfig.executablePath,
+            });
+        }
+
         global.browserWSEndpoint = global.browser.wsEndpoint();
         global.browser.on("disconnected", function () {
             logger.info("chromium disconnected");

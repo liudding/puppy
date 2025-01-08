@@ -1,4 +1,5 @@
 module.exports = {
+    
     // https://peter.sh/experiments/chromium-command-line-switches/
     args: [
         "--autoplay-policy=user-gesture-required",
@@ -57,7 +58,9 @@ module.exports = {
     // set UserDataDir to reuse js css cache
     // https://chromium.googlesource.com/chromium/src/+/refs/heads/main/docs/user_data_dir.md
     userDataDir: global.appRoot + "/../runtime/chrome/userData",
+    
     // executablePath: "/usr/local/data/chrome-linux/chrome",
+    browserWSEndpoint: null,
 
     pool: {
         max: 10,
